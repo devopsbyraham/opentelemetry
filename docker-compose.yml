@@ -1,0 +1,48 @@
+services:
+  # ---------- YOUR APP (3 services, same image, different command) ----------
+  gateway:
+    build: .
+    command: python gateway.py
+    environment:
+      ORDER_URL: http://order-service:5001
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+    ports: ["5000:5000"]
+    depends_on: [order-service, otel-collector]
+
+  order-service:
+    build: .
+    command: python order_service.py
+    environment:
+      INVENTORY_URL: http://inventory-service:5002
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+    depends_on: [inventory-service, otel-collector]
+
+  inventory-service:
+    build: .
+    command: python inventory_service.py
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
+    depends_on: [otel-collector]
+
+  # ---------- OBSERVABILITY PLUMBING ----------
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel/config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC (apps send here)
+      - "8889:8889"   # Prometheus scrape endpoint
+
+  jaeger:               # trace storage + UI
+    image: jaegertracing/all-in-one:1.60
+    ports: ["16686:16686"]
+
+  prometheus:           # metric storage + UI
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports: ["9090:9090"]
