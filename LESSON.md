@@ -16,7 +16,7 @@ You will run a tiny shop made of 3 Python services, watch one request travel thr
 
 ---
 
-## Minute 0–5: The problem OTel solves
+## The problem OTel solves
 
 A user says "checkout is slow". The request touched 3 services. Which one is slow? Why?
 
@@ -34,7 +34,7 @@ A user says "checkout is slow". The request touched 3 services. Which one is slo
 
 ---
 
-## Minute 5–10: The vocabulary (learn these, they are the interview)
+##  The vocabulary (learn these, they are the interview)
 
 - **Span** – one unit of work with a name, start time, duration, status, and attributes. E.g. `GET /checkout`, `db.query_stock`.
 - **Trace** – a tree of spans sharing one **trace_id**. One user request = one trace.
@@ -53,7 +53,7 @@ A user says "checkout is slow". The request touched 3 services. Which one is slo
 
 ---
 
-## Minute 10–18: Read the code (in this order)
+##  Read the code (in this order)
 
 ### 1. `telemetry.py` — the heart (≈75 lines)
 Follow the numbered comments 1→6:
@@ -81,10 +81,10 @@ Read it top to bottom: `receivers` (otlp) → `processors` (memory_limiter, add 
 
 ---
 
-## Minute 18–26: Run it and investigate like a DevOps engineer
+##  Run it and investigate like a DevOps engineer
 
 ```bash
-docker compose up --build -d
+docker-compose up --build -d
 python loadgen.py 100        # needs `pip install requests`, or use curl in a loop
 ```
 
@@ -122,7 +122,7 @@ sum by (result) (rate(inventory_checks_total[1m]))       # inventory outcomes
 
 ### Exercise E — logs ↔ traces
 ```bash
-docker compose logs order-service | tail -20
+docker-compose logs order-service | tail -20
 ```
 Each line contains `trace_id=...`. Copy one, paste into the Jaeger search box → you land on the exact trace for that log line.
 **Learn:** correlation is what turns three separate data streams into one story.
@@ -131,7 +131,7 @@ Each line contains `trace_id=...`. Copy one, paste into the Jaeger search box �
 ```bash
 docker compose stop jaeger
 curl "localhost:5000/checkout?item=laptop"      # app still works!
-docker compose start jaeger
+docker-compose start jaeger
 ```
 Your apps never talk to Jaeger directly. Want to switch backends? Edit only the Collector config. **That is the architecture argument interviewers want.**
 
@@ -198,14 +198,8 @@ You'll see raw spans printed as JSON. Match `trace_id` across the three terminal
 
 ---
 
-## Homework (the best way to lock it in)
-1. Add a `GET /orders/<id>` endpoint to `order_service.py` with a custom span and an attribute `order.id`.
-2. Add a **Histogram** `http_request_duration` in the gateway and graph p95 in Prometheus.
-3. In the Collector config, add the `probabilistic_sampler` processor at 50% to the traces pipeline and watch trace counts drop.
-4. Add Grafana to `docker-compose.yml`, add Prometheus + Jaeger as data sources, and build one dashboard.
-5. Explain the whole flow to a friend (or me) without looking at this file.
 
 ## Cleanup
 ```bash
-docker compose down
+docker-compose down
 ```
